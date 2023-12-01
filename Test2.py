@@ -20,6 +20,8 @@ for i in df.columns:
     if df[i].dtype=="int64":
         num_columns.append(i)
 
+#####       DataFrame.select_dtypes() chk
+
 over9 = []
 for row in num_columns:
     for col in num_columns:
@@ -31,3 +33,33 @@ for row in num_columns:
 print(over9)
 df = df.drop("JobLevel", axis=1)
 print(len(df.columns))
+
+
+#2유형
+#파킨슨 데이터 로지스틱 회귀
+#가장 영향력 높은 변수 3개 순서대로 선정
+#threshold를 0.5와 0.8로 했을때 f1score비교
+#name 변수 제거, min-max scaler 사용, LR을 위해 상수항 추가?, Status 카테고리타입 변환, train:test 9:1, bfgs algorithm 사용
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score
+
+df2 = pd.read_csv("./data/parkinsons.txt")
+df2 = df2.drop("name", axis=1)
+
+X = df2[[i for i in df2.columns if i != "status"]]
+y = df2["status"]           #df2["status"].astype("category") 느낌으로 category형으로 변환 가능...
+X_train, X_test, y_train, y_test = train_test_split(X.copy(), y.copy(), test_size=0.1)
+for column in X_train.columns:
+    scaler = MinMaxScaler()
+    X_train[column] = scaler.fit_transform(X_train[[column]])
+    X_test[column] = scaler.transform(X_test[[column]])
+model = LogisticRegression(solver="lbfgs")   ##########
+model.fit(X_train, y_train)
+proba = model.predict_proba(X_test)
+over5 = proba[:,1] > 0.5
+over8 = proba[:,1] > 0.8
+# print(model.p_value)
+print(f1_score(y_test, over5))
+print(f1_score(y_test, over8))
